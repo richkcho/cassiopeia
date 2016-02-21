@@ -73,12 +73,12 @@ class Match(cassiopeia.type.core.common.CassiopeiaObject):
 
     @cassiopeia.type.core.common.lazyproperty
     def participants(self):
-        """list<Participant>    the participants in this match"""
+        """Participants (list<Participant>)    the participants in this match"""
         participants = []
         for i in range(len(self.data.participants)):
             p = CombinedParticipant(self.data.participants[i], self.data.participantIdentities[i])
             participants.append(Participant(p))
-        return sorted(participants, key=lambda p: p.id)
+        return Participants(sorted(participants, key=lambda p: p.id))
 
     @property
     def platform(self):
@@ -93,7 +93,7 @@ class Match(cassiopeia.type.core.common.CassiopeiaObject):
     @property
     def region(self):
         """Region    the region the match was played in"""
-        return cassiopeia.type.core.common.Region(self.data.region) if self.data.region else None
+        return cassiopeia.type.core.common.Region(self.data.region.lower()) if self.data.region else None
 
     @property
     def season(self):
@@ -105,7 +105,7 @@ class Match(cassiopeia.type.core.common.CassiopeiaObject):
         """Team   the team on the blue side"""
         for team in self.data.teams:
             if team.teamId == cassiopeia.type.core.common.Side.blue.value:
-                return Team(team, [part for part in self.participants if part.side is cassiopeia.type.core.common.Side.blue])
+                return Team(team, Participants([part for part in self.participants if part.side is cassiopeia.type.core.common.Side.blue]))
         return None
 
     @cassiopeia.type.core.common.lazyproperty
@@ -113,7 +113,7 @@ class Match(cassiopeia.type.core.common.CassiopeiaObject):
         """Team   the team on the red side"""
         for team in self.data.teams:
             if team.teamId == cassiopeia.type.core.common.Side.red.value:
-                return Team(team, [part for part in self.participants if part.side is cassiopeia.type.core.common.Side.red])
+                return Team(team, Participants([part for part in self.participants if part.side is cassiopeia.type.core.common.Side.red]))
         return None
 
     @cassiopeia.type.core.common.lazyproperty
@@ -125,6 +125,32 @@ class Match(cassiopeia.type.core.common.CassiopeiaObject):
     def frames(self):
         """list<Frame>    the frames in this match"""
         return self.timeline.frames
+
+
+@cassiopeia.type.core.common.inheritdocs
+class Participants(list):
+    def __getitem__(self, key):
+        try:
+            return super().__getitem__(key)
+        except TypeError:
+            return self.__lookup(key)
+
+    def __lookup(self, key):
+        if isinstance(key, str):
+            for p in self:
+                if p.summoner_name == key or p.champion.name == key:
+                    return p
+        elif isinstance(key, cassiopeia.type.core.summoner.Summoner):
+            for p in self:
+                if p.summoner_id == key.id:
+                    return p
+        elif isinstance(key, cassiopeia.type.core.staticdata.Champion):
+            for p in self:
+                if p.champion.id == key.id:
+                    return p
+        else:
+            raise TypeError("Participant indices must be integers, slices, strings, summoners, or champions, not {t}".format(t=type(key)))
+        raise KeyError(key)
 
 
 @cassiopeia.type.core.common.inheritdocs
@@ -244,7 +270,7 @@ class Team(cassiopeia.type.core.common.CassiopeiaObject):
 
     @property
     def participants(self):
-        """list<Participant>    the participants in this match"""
+        """Participants (list<Participant>)    the participants in this match"""
         return self.__participants
 
     @cassiopeia.type.core.common.lazyproperty
@@ -388,6 +414,10 @@ class ParticipantStats(cassiopeia.type.core.common.CassiopeiaObject):
     def combat_score(self):
         """int    dominion only. the part of the participant's score that came from combat-related activities"""
         return self.data.combatPlayerScore
+
+    @property
+    def cs(self):
+        return self.minion_kills + self.monster_kills
 
     @property
     def deaths(self):
@@ -1101,7 +1131,7 @@ class ParticipantFrame(cassiopeia.type.core.common.CassiopeiaObject):
         return self.data.level
 
     @property
-    def minions_killed(self):
+    def minion_kills(self):
         """int    the number of minions killed"""
         return self.data.minionsKilled
 

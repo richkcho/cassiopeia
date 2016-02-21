@@ -4,7 +4,7 @@ import cassiopeia.core.requests
 import cassiopeia.type.core.common
 import cassiopeia.type.core.staticdata
 
-_ignore_items = {0, 1080, 2037, 2039, 2040, 3005, 3039, 3123, 3128, 3131, 3160, 3166, 3167, 3168, 3169, 3175, 3176, 3171, 3186, 3188, 3205, 3206, 3207, 3209, 3210, 3405, 3406, 3407, 3408, 3409, 3410, 3411, 3412, 3413, 3414, 3415, 3416, 3417, 3419, 3420}
+_ignore_items = {0, 1080, 1304, 1309, 1314, 1319, 1324, 1329, 2037, 2039, 2040, 3005, 3039, 3123, 3128, 3131, 3160, 3166, 3167, 3168, 3169, 3175, 3176, 3171, 3186, 3188, 3205, 3206, 3207, 3209, 3210, 3244, 3405, 3406, 3407, 3408, 3409, 3410, 3411, 3412, 3413, 3414, 3415, 3416, 3417, 3419, 3420}
 _ignore_runes = {8028}
 _ignore_summoner_spells = {10}
 
@@ -117,24 +117,38 @@ def get_item(id_):
     if item:
         return item
 
-    items = cassiopeia.riotapi.get_items()
-    try:
-        return next(filter(lambda item: item.id == id_, items))
-    except StopIteration:
-        return None
+    if cassiopeia.core.requests.load_policy is cassiopeia.type.core.common.LoadPolicy.eager:
+        items = cassiopeia.riotapi.get_items()
+        item = None
+        for itm in items:
+            if itm.id == id_:
+                item = itm
+                break
+    else:
+        item = cassiopeia.dto.staticdataapi.get_item(id_)
+        item = cassiopeia.type.core.staticdata.Item(item)
+        cassiopeia.core.requests.data_store.store(item, id_)
+
+    return item
 
 
 def get_items(ids=None):
     """Gets a bunch of items (or all of them)
-
 
     ids       list<int>     the IDs of the items to get (or None to get all items) (default None)
 
     return    list<Item>    the items
     """
     if ids is not None:
-        get_items()
-        return cassiopeia.core.requests.data_store.get(cassiopeia.type.core.staticdata.Item, ids, "id")
+        items = {item.id: item for item in get_items()}
+        results = []
+        for id_ in ids:
+            try:
+                item = items[id_]
+            except KeyError:
+                item = None
+            results.append(item)
+        return results
     else:
         if cassiopeia.core.requests.data_store.has_all(cassiopeia.type.core.staticdata.Item):
             return cassiopeia.core.requests.data_store.get_all(cassiopeia.type.core.staticdata.Item)
@@ -196,14 +210,20 @@ def get_mastery(id_):
 def get_masteries(ids=None):
     """Gets a bunch of masteries (or all of them)
 
-
     ids       list<int>        the IDs of the masteries to get (or None to get all masteries) (default None)
 
     return    list<Mastery>    the masteries
     """
     if ids is not None:
-        get_masteries()
-        return cassiopeia.core.requests.data_store.get(cassiopeia.type.core.staticdata.Mastery, ids, "id")
+        masteries = {mastery.id: mastery for mastery in get_masteries()}
+        results = []
+        for id_ in ids:
+            try:
+                mastery = masteries[id_]
+            except KeyError:
+                mastery = None
+            results.append(mastery)
+        return results
     else:
         if cassiopeia.core.requests.data_store.has_all(cassiopeia.type.core.staticdata.Mastery):
             return cassiopeia.core.requests.data_store.get_all(cassiopeia.type.core.staticdata.Mastery)
@@ -247,14 +267,20 @@ def get_rune(id_):
 def get_runes(ids=None):
     """Gets a bunch of runes (or all of them)
 
-
     ids       list<int>     the IDs of the runes to get (or None to get all runes) (default None)
 
     return    list<Rune>    the runes
     """
     if ids is not None:
-        get_runes()
-        return cassiopeia.core.requests.data_store.get(cassiopeia.type.core.staticdata.Rune, ids, "id")
+        runes = {rune.id: rune for rune in get_runes()}
+        results = []
+        for id_ in ids:
+            try:
+                rune = runes[id_]
+            except KeyError:
+                rune = None
+            results.append(rune)
+        return results
     else:
         if cassiopeia.core.requests.data_store.has_all(cassiopeia.type.core.staticdata.Rune):
             return cassiopeia.core.requests.data_store.get_all(cassiopeia.type.core.staticdata.Rune)
@@ -290,14 +316,20 @@ def get_summoner_spell(id_):
 def get_summoner_spells(ids=None):
     """Gets a bunch of summoner spells (or all of them)
 
-
     ids       list<int>              the IDs of the summoner spells to get (or None to get all summoner spells) (default None)
 
     return    list<SummonerSpell>    the summoner spells
     """
     if ids is not None:
-        get_summoner_spells()
-        return cassiopeia.core.requests.data_store.get(cassiopeia.type.core.staticdata.SummonerSpell, ids, "id")
+        summoner_spells = {summoner_spell.id: summoner_spell for summoner_spell in get_summoner_spells()}
+        results = []
+        for id_ in ids:
+            try:
+                summoner_spell = summoner_spells[id_]
+            except KeyError:
+                summoner_spell = None
+            results.append(summoner_spell)
+        return results
     else:
         if cassiopeia.core.requests.data_store.has_all(cassiopeia.type.core.staticdata.SummonerSpell):
             return cassiopeia.core.requests.data_store.get_all(cassiopeia.type.core.staticdata.SummonerSpell)
